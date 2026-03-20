@@ -3,6 +3,7 @@ import { JWKSValidator } from './JWKSValidator';
 import { TimerManager } from './TimerManager';
 import { HeartbeatManager } from './HeartbeatManager';
 import { TabSyncManager, TabSyncMessage } from './TabSyncManager';
+import { PurchaseStateManager } from './PurchaseStateManager';
 import { WarningModal } from '../ui/WarningModal';
 import { extractTokenFromURL } from '../utils/url';
 import { Logger } from '../utils/logger';
@@ -28,6 +29,7 @@ export class MarketplaceSDK {
   private sessionData: SessionData | null = null;
   private jwtToken: string | null = null;
   private endReason: 'expired' | 'manual' | 'error' = 'manual';
+  private purchaseStateManager: PurchaseStateManager;
 
   constructor(config: SDKConfig) {
     this.config = {
@@ -55,6 +57,9 @@ export class MarketplaceSDK {
 
     this.validator = new JWKSValidator(this.config.jwksUri, this.config.debug);
     this.logger = new Logger(this.config.debug, '[MarketplaceSDK]');
+    this.purchaseStateManager = new PurchaseStateManager({
+      apiEndpoint: this.config.apiEndpoint
+    });
 
     this.logger.info('SDK initialized with config:', {
       jwksUri: this.config.jwksUri,
@@ -692,6 +697,13 @@ export class MarketplaceSDK {
    */
   isTimerRunning(): boolean {
     return this.timer?.isRunning() ?? false;
+  }
+
+  /**
+   * Get purchase state manager for item purchase state checking
+   */
+  getPurchaseStateManager(): PurchaseStateManager {
+    return this.purchaseStateManager;
   }
 
   /**
