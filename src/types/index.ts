@@ -248,3 +248,39 @@ export interface JWKSKey {
 export interface JWKSResponse {
   keys: JWKSKey[];
 }
+
+/**
+ * Purchase State Constants
+ */
+export enum PurchaseState {
+  AVAILABLE = 'AVAILABLE',
+  PRIVY_REQUIRED = 'PRIVY_REQUIRED',
+  INSUFFICIENT_FUNDS = 'INSUFFICIENT_FUNDS'
+}
+
+/**
+ * Privy Eligibility Details (internal use - not exposed to apps)
+ */
+export interface PrivyEligibilityDetails {
+  requiresUpgrade: boolean;
+  currentLevel: number;
+  requiredLevel: number;
+}
+
+/**
+ * Raw Privy Eligibility Response (internal use - not exposed to apps)
+ */
+export interface PrivyEligibilityResponse {
+  state: PurchaseState;
+  privyEligibility?: {
+    [levelId: string]: PrivyEligibilityDetails;
+  };
+}
+
+/**
+ * Filtered Purchase State Response (exposed to apps)
+ */
+export interface PurchaseStateResponse {
+  state: PurchaseState;
+  requiredLevel?: number; // Only exposed for PRIVY_REQUIRED state
+}
