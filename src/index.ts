@@ -19,6 +19,7 @@ export type { TabSyncMessage } from './core/TabSyncManager';
 // UI Components
 export { WarningModal } from './ui/WarningModal';
 export { SessionHeader } from './ui/SessionHeader';
+export { PurchaseModal } from './ui/PurchaseModal';
 
 // Styling & Theme
 export { lightTheme, darkTheme, getTheme, generateCSSVariables } from './styles/theme';
@@ -42,7 +43,8 @@ export type {
   SessionWarningContext,
 } from './types';
 
-export { SDKError } from './types';
+export { SDKError, PurchaseError } from './types';
+export type { PurchaseResult } from './types';
 
 // Utilities
 export { extractTokenFromURL, isBrowser } from './utils/url';

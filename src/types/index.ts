@@ -88,18 +88,17 @@ export interface ModalStyles {
 export type ThemeMode = 'light' | 'dark' | 'auto';
 
 /**
- * SDK Event Handlers
+ * Purchase Result
  */
-export interface SDKEvents {
-  /** Called when session successfully initialized */
-  onSessionStart: (data: SessionData) => void;
-  /** Called when warning threshold reached */
-  onSessionWarning: (data: { remainingSeconds: number }) => void;
-  /** Called when session expires or is ended */
-  onSessionEnd: () => void;
-  /** Called on any error */
-  onError: (error: Error) => void;
+export interface PurchaseResult {
+  /** Item ID that was purchased */
+  itemId: string;
+  /** Transaction ID from payment processor */
+  transactionId: string;
+  /** Purchase amount */
+  amount: number;
 }
+
 
 /**
  * Session Lifecycle Hook Contexts
@@ -203,6 +202,49 @@ export class SDKError extends Error {
       Error.captureStackTrace(this, SDKError);
     }
   }
+}
+
+/**
+ * Purchase Error
+ */
+export class PurchaseError extends SDKError {
+  constructor(
+    message: string,
+    code: string,
+    public itemId: string,
+    statusCode?: number
+  ) {
+    super(message, code, statusCode);
+    this.name = 'PurchaseError';
+  }
+}
+
+/**
+ * SDK Event Handlers
+ */
+export interface SDKEvents {
+  /** Called when session successfully initialized */
+  onSessionStart: (data: SessionData) => void;
+  /** Called when warning threshold reached */
+  onSessionWarning: (data: { remainingSeconds: number }) => void;
+  /** Called when session expires or is ended */
+  onSessionEnd: () => void;
+  /** Called on any error */
+  onError: (error: Error) => void;
+
+  // Purchase Events
+  /** Called when purchase process starts */
+  onPurchaseStart: (data: { itemId: string; quantity: number }) => void;
+  /** Called when purchase succeeds */
+  onPurchaseSuccess: (result: PurchaseResult) => void;
+  /** Called when purchase fails */
+  onPurchaseError: (error: PurchaseError) => void;
+  /** Called after successful requestPurchase */
+  onPurchaseComplete: (itemId: string) => void;
+  /** Called when purchase is cancelled by user */
+  onPurchaseCancelled: (itemId: string) => void;
+  /** Called when user balance is updated */
+  onBalanceUpdate: (balance: number) => void;
 }
 
 /**

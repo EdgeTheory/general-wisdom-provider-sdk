@@ -7,7 +7,8 @@ import { PurchaseStateManager } from './PurchaseStateManager';
 import { WarningModal } from '../ui/WarningModal';
 import { extractTokenFromURL } from '../utils/url';
 import { Logger } from '../utils/logger';
-import { SDKConfig, SDKEvents, SessionData, SDKError, SessionStartContext, SessionEndContext, SessionExtendContext, SessionWarningContext } from '../types';
+import { SDKConfig, SDKEvents, SessionData, SDKError, PurchaseError, PurchaseResult, SessionStartContext, SessionEndContext, SessionExtendContext, SessionWarningContext } from '../types';
+import { PurchaseModal } from '../ui/PurchaseModal';
 
 /**
  * Marketplace SDK with Phase 2 Features
@@ -30,6 +31,7 @@ export class MarketplaceSDK {
   private jwtToken: string | null = null;
   private endReason: 'expired' | 'manual' | 'error' = 'manual';
   private purchaseStateManager: PurchaseStateManager;
+  private purchaseModal: PurchaseModal | null = null;
 
   constructor(config: SDKConfig) {
     this.config = {
@@ -700,6 +702,86 @@ export class MarketplaceSDK {
   }
 
   /**
+   * Request purchase of an item — opens PurchaseModal directly
+   * Bypasses the add-ons panel; works for any active item (visible or hidden)
+   */
+  requestPurchase(itemId: string): void {
+    if (!this.sessionData || !this.jwtToken) {
+      throw new SDKError('No active session', 'NO_SESSION');
+    }
+
+    this.logger.info('Requesting purchase for item:', itemId);
+
+    // Fire onPurchaseStart
+    this.events.onPurchaseStart?.({ itemId, quantity: 1 });
+
+    // Create modal if needed (lazy init, same pattern as WarningModal)
+    if (!this.purchaseModal) {
+      this.purchaseModal = new PurchaseModal(
+        this.config.themeMode || 'light',
+        this.config.customStyles
+      );
+    }
+
+    this.purchaseModal.show({
+      itemId,
+      onConfirm: async () => {
+        try {
+          const response = await fetch(
+            `${this.config.apiEndpoint}/items/${itemId}/purchase`,
+            {
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer ${this.jwtToken}`,
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({ item_id: itemId, quantity: 1 }),
+            }
+          );
+
+          if (!response.ok) {
+            throw new PurchaseError(
+              'Purchase failed',
+              'PURCHASE_FAILED',
+              itemId,
+              response.status
+            );
+          }
+
+          const data = await response.json();
+          const result: PurchaseResult = {
+            itemId,
+            transactionId: data.transactionId,
+            amount: data.amount,
+          };
+
+          this.events.onPurchaseSuccess?.(result);
+          this.events.onPurchaseComplete?.(itemId);
+          if (data.newBalance !== undefined) {
+            this.events.onBalanceUpdate?.(data.newBalance);
+          }
+
+          this.logger.info('Purchase successful:', result);
+        } catch (error) {
+          const purchaseError = error instanceof PurchaseError
+            ? error
+            : new PurchaseError(
+                error instanceof Error ? error.message : 'Purchase failed',
+                'PURCHASE_ERROR',
+                itemId
+              );
+          this.events.onPurchaseError?.(purchaseError);
+          this.logger.error('Purchase failed:', purchaseError);
+        }
+      },
+      onCancel: () => {
+        this.events.onPurchaseCancelled?.(itemId);
+        this.logger.info('Purchase cancelled for item:', itemId);
+      },
+    });
+  }
+
+  /**
    * Get purchase state manager for item purchase state checking
    */
   getPurchaseStateManager(): PurchaseStateManager {
@@ -715,6 +797,7 @@ export class MarketplaceSDK {
     this.heartbeat?.stop();
     this.tabSync?.destroy();
     this.modal?.hide();
+    this.purchaseModal?.hide();
 
     // Clear JWT from storage
     if (typeof sessionStorage !== 'undefined') {
