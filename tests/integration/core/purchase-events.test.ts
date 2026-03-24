@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { MarketplaceSDK } from '../../../src/core/MarketplaceSDK.js';
-import { PurchaseError, PurchaseResult, PurchaseState } from '../../../src/types/index.js';
+import { PurchaseError } from '../../../src/types/index.js';
 
 describe('MarketplaceSDK Purchase Events', () => {
   let sdk: MarketplaceSDK;
