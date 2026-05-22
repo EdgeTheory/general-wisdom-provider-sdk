@@ -2,8 +2,8 @@
  * SDK Configuration
  */
 export interface SDKConfig {
-  /** JWKS endpoint URL (default: https://api.platform.generalwisdom.com/.well-known/jwks.json) */
-  jwksUri?: string;
+  /** JWKS endpoint URL — REQUIRED, environment-aware (e.g., https://api.dev.generalwisdom.com/.well-known/jwks.json) */
+  jwksUri: string;
   /** URL query parameter name containing the JWT (default: 'gwSession') */
   jwtParamName?: string;
   /** API endpoint for backend integration (Phase 2) */
@@ -22,8 +22,8 @@ export interface SDKConfig {
   themeMode?: ThemeMode;
   /** Application ID for validation */
   applicationId?: string;
-  /** Marketplace URL for redirects (default: https://platform.generalwisdom.com/) */
-  marketplaceUrl?: string;
+  /** Marketplace URL for redirects — REQUIRED, environment-aware (e.g., https://dev.generalwisdom.com/) */
+  marketplaceUrl: string;
 
   // Phase 2 Features
   /** Enable heartbeat system (default: false) */

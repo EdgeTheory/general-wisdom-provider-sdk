@@ -122,7 +122,10 @@ npm install @mission_sciences/provider-sdk
 import { MarketplaceSDK } from '@mission_sciences/provider-sdk';
 
 const sdk = new MarketplaceSDK({
-  jwksUri: '/.well-known/jwks.json',
+  // REQUIRED: Environment-aware JWKS URL for JWT signature validation
+  jwksUri: 'https://api.dev.generalwisdom.com/.well-known/jwks.json',
+  // REQUIRED: Environment-aware marketplace URL for session end redirects
+  marketplaceUrl: 'https://dev.generalwisdom.com/',
   applicationId: 'my-app',
   autoStart: true,
   warningThresholdSeconds: 120,
@@ -178,7 +181,10 @@ function useMarketplaceSession() {
 
   useEffect(() => {
     const sdk = new MarketplaceSDK({
-      jwksUri: '/.well-known/jwks.json',
+      // REQUIRED: Environment-aware JWKS URL for JWT signature validation
+      jwksUri: 'https://api.dev.generalwisdom.com/.well-known/jwks.json',
+      // REQUIRED: Environment-aware marketplace URL for session end redirects
+      marketplaceUrl: 'https://dev.generalwisdom.com/',
       applicationId: 'my-react-app',
       autoStart: true,
       hooks: {
@@ -249,8 +255,10 @@ See [examples/auth-integration/README.md](./examples/auth-integration/README.md)
 
 ```typescript
 interface SDKConfig {
-  // JWT & Validation
-  jwksUri?: string;                   // JWKS endpoint (default: GW production endpoint)
+  // JWT & Validation (REQUIRED)
+  jwksUri: string;                    // REQUIRED: Environment-aware JWKS endpoint (NO default)
+  marketplaceUrl: string;             // REQUIRED: Environment-aware marketplace URL for redirects (NO default)
+  
   jwtParamName?: string;              // URL query parameter name (default: 'gwSession')
   applicationId?: string;             // Your application ID
   useBackendValidation?: boolean;     // Use backend instead of JWKS (default: false)
@@ -258,7 +266,6 @@ interface SDKConfig {
   // Session Behavior
   autoStart?: boolean;                // Auto-start from URL JWT (default: true)
   warningThresholdSeconds?: number;   // Warning before expiry (default: 300)
-  marketplaceUrl?: string;            // Redirect URL after session end
 
   // Lifecycle Hooks
   hooks?: {
@@ -280,6 +287,18 @@ interface SDKConfig {
   debug?: boolean;                    // Console logging (default: false)
 }
 ```
+
+### Environment-Specific URLs (REQUIRED)
+
+⚠️ **Breaking Change (v0.4.0+)**: `jwksUri` and `marketplaceUrl` are now **required** and have **no default values**. Previous versions silently defaulted to production URLs, which caused dev/demo sessions to fail JWT validation. You must explicitly provide environment-aware values.
+
+| Environment | `jwksUri` | `marketplaceUrl` |
+|-------------|-----------|------------------|
+| **dev** | `https://api.dev.generalwisdom.com/.well-known/jwks.json` | `https://dev.generalwisdom.com/` |
+| **demo** | `https://api.demo.generalwisdom.com/.well-known/jwks.json` | `https://demo.generalwisdom.com/` |
+| **prod** | `https://api.platform.generalwisdom.com/.well-known/jwks.json` | `https://platform.generalwisdom.com/` |
+
+**Why this matters:** The SDK validates session JWTs using the JWKS endpoint. If you pass a dev JWT but point `jwksUri` at production, signature validation will fail. Similarly, `marketplaceUrl` determines where users are redirected when their session ends — pointing at the wrong environment breaks the session lifecycle.
 
 ## API Reference
 

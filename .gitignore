@@ -53,3 +53,5 @@ report.md
 
 # Git worktrees for parallel agent work
 .worktrees/
+implementation-plan.md
+.agent-context.json
