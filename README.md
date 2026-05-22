@@ -72,7 +72,6 @@ await sdk.initialize();
 - **Heartbeat**: Automatic server sync at configurable intervals
 - **Multi-Tab Sync**: Master tab election via BroadcastChannel API
 - **Session Extension**: Self-service renewal with `extendSession(minutes)`
-- **Early Completion**: End sessions early with `completeSession(actualMinutes)`
 - **Visibility API**: Auto-pause timer when tab is hidden
 - **Backend Validation**: Alternative to JWKS for sensitive apps
 
@@ -329,7 +328,6 @@ class MarketplaceSDK {
   // Session control
   async endSession(): Promise<void>
   async extendSession(additionalMinutes: number): Promise<void>
-  async completeSession(actualUsageMinutes?: number): Promise<void>
 
   // Data
   getSessionData(): SessionData | null

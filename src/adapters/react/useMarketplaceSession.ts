@@ -23,7 +23,6 @@ export interface UseMarketplaceSessionReturn {
   resumeTimer: () => void;
   endSession: () => void;
   extendSession: (minutes: number) => Promise<void>;
-  completeSession: (actualUsageMinutes?: number) => Promise<void>;
   sdk: MarketplaceSDK | null;
 }
 
@@ -138,11 +137,6 @@ export function useMarketplaceSession(
     await sdkRef.current.extendSession(minutes);
   }, []);
 
-  const completeSession = useCallback(async (actualUsageMinutes?: number) => {
-    if (!sdkRef.current) throw new Error('SDK not initialized');
-    await sdkRef.current.completeSession(actualUsageMinutes);
-  }, []);
-
   return {
     session,
     loading,
@@ -156,7 +150,6 @@ export function useMarketplaceSession(
     resumeTimer,
     endSession,
     extendSession,
-    completeSession,
     sdk: sdkRef.current,
   };
 }

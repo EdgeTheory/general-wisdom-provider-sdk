@@ -9,6 +9,7 @@ import { extractTokenFromURL } from '../utils/url';
 import { Logger } from '../utils/logger';
 import { SDKConfig, SDKEvents, SessionData, SDKError, PurchaseError, PurchaseResult, SessionStartContext, SessionEndContext, SessionExtendContext, SessionWarningContext } from '../types';
 import { PurchaseModal } from '../ui/PurchaseModal';
+import { SDK_API_BASE } from './constants';
 
 /**
  * Marketplace SDK with Phase 2 Features
@@ -346,7 +347,7 @@ export class MarketplaceSDK {
    */
   private async validateWithBackend(token: string): Promise<any> {
     const response = await fetch(
-      `${this.config.apiEndpoint}/sessions/validate`,
+      `${this.config.apiEndpoint}${SDK_API_BASE}/sessions/validate`,
       {
         method: 'POST',
         headers: {
@@ -463,15 +464,16 @@ export class MarketplaceSDK {
 
     try {
       const response = await fetch(
-        `${this.config.apiEndpoint}/sessions/${this.sessionData.sessionId}/renew`,
+        `${this.config.apiEndpoint}${SDK_API_BASE}/sessions/${this.sessionData.sessionId}/extend`,
         {
-          method: 'PUT',
+          method: 'POST',
           headers: {
             'Authorization': `Bearer ${this.jwtToken}`,
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            additional_minutes: additionalMinutes,
+            extensionMinutes: additionalMinutes,
+            idempotencyKey: crypto.randomUUID(),
           }),
         }
       );
@@ -487,11 +489,11 @@ export class MarketplaceSDK {
       const data = await response.json();
 
       // Update session data
-      this.sessionData.exp = data.new_expires_at;
+      this.sessionData.exp = data.newExpiresAt;
 
       // Update timer
       const now = Math.floor(Date.now() / 1000);
-      const remainingSeconds = data.new_expires_at - now;
+      const remainingSeconds = data.newExpiresAt - now;
       this.timer?.updateRemainingTime(remainingSeconds);
 
       // Broadcast to other tabs
@@ -503,7 +505,7 @@ export class MarketplaceSDK {
           sessionId: this.sessionData.sessionId,
           userId: this.sessionData.userId,
           additionalMinutes,
-          newExpiresAt: data.new_expires_at,
+          newExpiresAt: data.newExpiresAt,
         };
 
         await this.executeHook('onSessionExtend', this.config.hooks.onSessionExtend, extendContext, false);
@@ -516,57 +518,6 @@ export class MarketplaceSDK {
       const sdkError = error instanceof SDKError ? error : new SDKError(
         error instanceof Error ? error.message : 'Extension failed',
         'EXTENSION_ERROR'
-      );
-      this.events.onError?.(sdkError);
-      throw sdkError;
-    }
-  }
-
-  /**
-   * Phase 2: Complete session
-   */
-  async completeSession(actualUsageMinutes?: number): Promise<void> {
-    if (!this.sessionData || !this.jwtToken) {
-      throw new SDKError('No active session', 'NO_SESSION');
-    }
-
-    this.logger.info('Completing session...');
-
-    try {
-      const response = await fetch(
-        `${this.config.apiEndpoint}/sessions/${this.sessionData.sessionId}/complete`,
-        {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${this.jwtToken}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            actual_usage_minutes: actualUsageMinutes,
-            metadata: {},
-          }),
-        }
-      );
-
-      if (!response.ok) {
-        throw new SDKError(
-          'Session completion failed',
-          'COMPLETION_FAILED',
-          response.status
-        );
-      }
-
-      const data = await response.json();
-      this.logger.info('Session completed:', data);
-
-      // End the session
-      this.endSession();
-
-    } catch (error) {
-      this.logger.error('Failed to complete session:', error);
-      const sdkError = error instanceof SDKError ? error : new SDKError(
-        error instanceof Error ? error.message : 'Completion failed',
-        'COMPLETION_ERROR'
       );
       this.events.onError?.(sdkError);
       throw sdkError;
@@ -742,7 +693,7 @@ export class MarketplaceSDK {
       onConfirm: async () => {
         try {
           const response = await fetch(
-            `${this.config.apiEndpoint}/items/${itemId}/purchase`,
+            `${this.config.apiEndpoint}${SDK_API_BASE}/items/${itemId}/purchase`,
             {
               method: 'POST',
               headers: {

@@ -1,4 +1,5 @@
 import { PurchaseState, PurchaseStateResponse, PrivyEligibilityResponse, PrivyEligibilityDetails } from '../types/index.js';
+import { SDK_API_BASE } from './constants';
 
 /**
  * Configuration for PurchaseStateManager
@@ -28,7 +29,7 @@ export class PurchaseStateManager {
    */
   async checkItemPurchaseState(itemId: string): Promise<PurchaseStateResponse> {
     try {
-      const response = await fetch(`${this.config.apiEndpoint}/items/${itemId}/purchase-state`, {
+      const response = await fetch(`${this.config.apiEndpoint}${SDK_API_BASE}/items/${itemId}/purchase-state`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',

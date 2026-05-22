@@ -1,5 +1,6 @@
 import { Logger } from '../utils/logger';
 import { SDKError } from '../types';
+import { SDK_API_BASE } from './constants';
 
 /**
  * Heartbeat Manager for active session tracking
@@ -72,7 +73,7 @@ export class HeartbeatManager {
 
     try {
       const response = await fetch(
-        `${this.apiEndpoint}/sessions/${this.sessionId}/heartbeat`,
+        `${this.apiEndpoint}${SDK_API_BASE}/sessions/${this.sessionId}/heartbeat`,
         {
           method: 'POST',
           headers: {

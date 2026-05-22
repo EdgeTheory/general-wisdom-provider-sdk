@@ -252,7 +252,7 @@ describe('MarketplaceSDK Purchase Events', () => {
       await capturedOnConfirm?.();
 
       expect(fetchSpy).toHaveBeenCalledWith(
-        'https://api.test.com/items/item-300/purchase',
+        'https://api.test.com/v1/sdk/items/item-300/purchase',
         expect.objectContaining({
           method: 'POST',
           headers: expect.objectContaining({
