@@ -1,6 +1,6 @@
 {
   "name": "@mission_sciences/provider-sdk",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "Provider SDK for JWT-based marketplace session management",
   "type": "module",
   "main": "./dist/marketplace-sdk.umd.js",

@@ -24,6 +24,7 @@ export function useMarketplaceSession(options: UseMarketplaceSessionOptions = {}
     try {
       const marketplaceSDK = new MarketplaceSDK({
         jwksUri: options.jwksUri,
+        marketplaceUrl: options.marketplaceUrl,
         apiEndpoint: options.apiEndpoint,
         debug: options.debug,
         autoStart: options.autoStart,

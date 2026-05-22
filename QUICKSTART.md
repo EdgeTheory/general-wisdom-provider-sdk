@@ -246,7 +246,9 @@ Once you've verified the SDK works:
    - Add your own event handlers
 
 3. **Connect to Real Backend**
-   - Update `jwksUri` to your production JWKS endpoint
+   - Update `jwksUri` and `marketplaceUrl` to match your environment (dev/demo/prod)
+   - For dev: `https://api.dev.generalwisdom.com/.well-known/jwks.json` and `https://dev.generalwisdom.com/`
+   - For prod: `https://api.platform.generalwisdom.com/.well-known/jwks.json` and `https://platform.generalwisdom.com/`
    - Use real JWTs from your Go backend
    - Everything else stays the same!
 

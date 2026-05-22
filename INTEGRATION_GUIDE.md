@@ -1070,25 +1070,26 @@ onSessionEnd: async (context: SessionEndContext) => {
 },
 ```
 
-**Preventing Redirect**:
+**Custom Redirect Handling**:
 
-By default, SDK redirects to marketplace after session ends. To prevent this:
+By default, SDK redirects to the marketplace after session ends. To customize this behavior, handle redirects in your `onSessionEnd` hook:
 
 ```typescript
 const sdk = new MarketplaceSDK({
+  jwksUri: 'https://api.dev.generalwisdom.com/.well-known/jwks.json',
+  marketplaceUrl: 'https://dev.generalwisdom.com/', // Required
   // ... other options
-  marketplaceUrl: undefined, // Disable redirect
 });
 
-// Or handle redirect manually in onSessionEnd:
+// Handle redirect manually in onSessionEnd:
 onSessionEnd: async (context: SessionEndContext) => {
   await cleanup();
   
   // Custom redirect logic
   if (context.reason === 'expired') {
-    window.location.href = 'https://marketplace.example.com?session=expired';
+    window.location.href = 'https://dev.generalwisdom.com/?session=expired';
   } else {
-    window.location.href = 'https://marketplace.example.com';
+    window.location.href = 'https://dev.generalwisdom.com/';
   }
 },
 ```
@@ -1891,12 +1892,22 @@ const sdk = new MarketplaceSDK({
 
 ### Environment Configuration
 
-**Development**:
+**Development** (local testing):
 ```typescript
 const config = {
-  jwksUrl: 'http://localhost:3000/.well-known/jwks.json',
-  applicationId: 'test-app',
+  jwksUri: 'http://localhost:3000/.well-known/jwks.json',
   marketplaceUrl: 'http://localhost:8080',
+  applicationId: 'test-app',
+  debug: true,
+};
+```
+
+**General Wisdom Dev Environment**:
+```typescript
+const config = {
+  jwksUri: 'https://api.dev.generalwisdom.com/.well-known/jwks.json',
+  marketplaceUrl: 'https://dev.generalwisdom.com/',
+  applicationId: process.env.MARKETPLACE_APP_ID,
   debug: true,
 };
 ```
@@ -1904,8 +1915,9 @@ const config = {
 **Production**:
 ```typescript
 const config = {
+  jwksUri: 'https://api.platform.generalwisdom.com/.well-known/jwks.json',
+  marketplaceUrl: 'https://platform.generalwisdom.com/',
   applicationId: process.env.MARKETPLACE_APP_ID,
-  marketplaceUrl: 'https://marketplace.generalwisdom.com',
   debug: false,
 };
 ```
@@ -1986,17 +1998,19 @@ new MarketplaceSDK(options: SDKOptions)
 
 ```typescript
 interface SDKOptions {
+  // Required (v0.4.0+)
+  jwksUri: string;                   // REQUIRED: Environment-aware JWKS endpoint URL
+  marketplaceUrl: string;            // REQUIRED: Environment-aware marketplace redirect URL
+  
   // Required
-  jwtParamName?: string;             // URL parameter name for JWT (default: 'gwSession')
   applicationId: string;             // Your registered app ID
-  jwksUrl: string;                   // JWKS endpoint URL
   onSessionStart: (context: SessionStartContext) => Promise<void>;
   onSessionEnd: (context: SessionEndContext) => Promise<void>;
   
   // Optional
+  jwtParamName?: string;             // URL parameter name for JWT (default: 'gwSession')
   onSessionWarning?: (context: SessionWarningContext) => Promise<void>;
   onSessionExtend?: (context: SessionExtendContext) => Promise<void>;
-  marketplaceUrl?: string;           // Redirect URL after session end
   warningThresholdMinutes?: number;  // Warning threshold (default: 5)
   debug?: boolean;                   // Enable debug logging
   pauseWhenHidden?: boolean;         // Auto-pause when tab hidden

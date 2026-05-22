@@ -34,8 +34,22 @@ export class MarketplaceSDK {
   private purchaseModal: PurchaseModal | null = null;
 
   constructor(config: SDKConfig) {
+    // Validate required environment-aware configuration
+    if (!config.jwksUri) {
+      throw new SDKError(
+        'jwksUri is required — pass an environment-aware JWKS URL (e.g., https://api.dev.generalwisdom.com/.well-known/jwks.json). See README for environment-specific URLs.',
+        'CONFIG_MISSING_JWKS_URI'
+      );
+    }
+    if (!config.marketplaceUrl) {
+      throw new SDKError(
+        'marketplaceUrl is required — pass an environment-aware marketplace URL (e.g., https://dev.generalwisdom.com/). See README for environment-specific URLs.',
+        'CONFIG_MISSING_MARKETPLACE_URL'
+      );
+    }
+
     this.config = {
-      jwksUri: config.jwksUri || 'https://api.platform.generalwisdom.com/.well-known/jwks.json',
+      jwksUri: config.jwksUri,
       jwtParamName: config.jwtParamName || 'gwSession',
       apiEndpoint: config.apiEndpoint || 'https://api.platform.generalwisdom.com',
       jwtIssuer: config.jwtIssuer || 'generalwisdom.com',
@@ -45,7 +59,7 @@ export class MarketplaceSDK {
       customStyles: config.customStyles ?? {},
       themeMode: config.themeMode ?? 'light',
       applicationId: config.applicationId ?? '',
-      marketplaceUrl: config.marketplaceUrl ?? 'https://platform.generalwisdom.com/',
+      marketplaceUrl: config.marketplaceUrl,
       // Phase 2 options
       enableHeartbeat: config.enableHeartbeat ?? false,
       heartbeatIntervalSeconds: config.heartbeatIntervalSeconds ?? 30,

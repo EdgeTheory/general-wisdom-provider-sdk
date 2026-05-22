@@ -8,6 +8,8 @@ describe('MarketplaceSDK Purchase State Integration', () => {
 
   beforeEach(() => {
     sdk = new MarketplaceSDK({
+      jwksUri: 'https://api.dev.generalwisdom.com/.well-known/jwks.json',
+      marketplaceUrl: 'https://dev.generalwisdom.com/',
       apiEndpoint: 'https://api.test.com',
       debug: false,
       autoStart: false // Don't auto-initialize for these tests
