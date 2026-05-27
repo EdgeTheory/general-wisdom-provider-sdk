@@ -55,3 +55,7 @@ report.md
 .worktrees/
 implementation-plan.md
 .agent-context.json
+
+# Pact generated artifacts
+pact/pacts/
+pact/logs/
