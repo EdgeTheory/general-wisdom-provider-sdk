@@ -569,7 +569,16 @@ export class MarketplaceSDK {
 
     this.logger.info('Session ended');
 
-    // Show "Session Ending" modal, then redirect after 3 seconds
+    // Show "Session Ending" modal, then close-or-redirect after 3 seconds.
+    //
+    // GW-6324: prefer window.close() since marketplace tabs are typically
+    // script-opened (target="_blank" from the marketplace SPA), and browsers
+    // allow scripts to close the window they were opened by. window.close()
+    // is silently no-op'd when the browser refuses (e.g. for tabs the user
+    // navigated to directly), so we fall back to redirecting after a short
+    // delay. Net behavior:
+    //   - Tab opened from marketplace SPA → tab closes.
+    //   - Tab opened directly via URL paste → redirects to marketplaceUrl.
     if (typeof window !== 'undefined') {
       // Create modal if it doesn't exist
       if (!this.modal) {
@@ -579,9 +588,19 @@ export class MarketplaceSDK {
         );
       }
 
-      // Show ending message with redirect callback
+      // Show ending message; on dismiss, try close-then-redirect.
       this.modal.showEndingMessage(() => {
-        window.location.href = this.config.marketplaceUrl;
+        try {
+          window.close();
+        } catch {
+          // Some browsers throw rather than silently no-op; either way,
+          // fall through to the redirect.
+        }
+        // If close() succeeded, the script never reaches this; if it didn't,
+        // redirect after a tiny delay so any pending close completes first.
+        setTimeout(() => {
+          window.location.href = this.config.marketplaceUrl;
+        }, 200);
       }, 3000); // 3 second delay
     }
   }
