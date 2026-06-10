@@ -1,5 +1,5 @@
-import { ModalStyles, ThemeMode } from '../types';
-import { getTheme, Theme } from '../styles/theme';
+import { ModalStyles, ThemeMode } from "../types";
+import { getTheme, Theme } from "../styles/theme";
 
 /**
  * Warning Modal for session expiration alerts
@@ -14,18 +14,22 @@ export class WarningModal {
   private initialSeconds: number = 0;
   private onEndCallback: (() => void) | undefined = undefined;
 
-  constructor(themeMode: ThemeMode = 'light', customStyles?: Partial<ModalStyles>) {
+  constructor(
+    themeMode: ThemeMode = "light",
+    customStyles?: Partial<ModalStyles>,
+  ) {
     // Use new theme system
-    const prefersDark = themeMode === 'dark' || (themeMode === 'auto' && this.detectDarkMode());
+    const prefersDark =
+      themeMode === "dark" || (themeMode === "auto" && this.detectDarkMode());
     this.theme = getTheme(prefersDark);
 
     // Keep legacy styles for backward compatibility
     if (customStyles) {
       this.legacyStyles = {
-        backgroundColor: customStyles.backgroundColor || '#ffffff',
-        textColor: customStyles.textColor || '#333333',
-        primaryColor: customStyles.primaryColor || '#007bff',
-        borderRadius: customStyles.borderRadius || '8px',
+        backgroundColor: customStyles.backgroundColor || "#ffffff",
+        textColor: customStyles.textColor || "#333333",
+        primaryColor: customStyles.primaryColor || "#007bff",
+        borderRadius: customStyles.borderRadius || "8px",
         fontFamily:
           customStyles.fontFamily ||
           '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
@@ -34,8 +38,8 @@ export class WarningModal {
   }
 
   private detectDarkMode(): boolean {
-    if (typeof window !== 'undefined' && window.matchMedia) {
-      return window.matchMedia('(prefers-color-scheme: dark)').matches;
+    if (typeof window !== "undefined" && window.matchMedia) {
+      return window.matchMedia("(prefers-color-scheme: dark)").matches;
     }
     return false;
   }
@@ -52,8 +56,8 @@ export class WarningModal {
     this.hide();
 
     // Create modal
-    this.modal = document.createElement('div');
-    this.modal.id = 'gw-session-warning-modal';
+    this.modal = document.createElement("div");
+    this.modal.id = "gw-session-warning-modal";
     this.modal.style.cssText = `
       position: fixed;
       top: 0;
@@ -69,10 +73,13 @@ export class WarningModal {
     `;
 
     // Create modal content
-    const content = document.createElement('div');
-    const bgColor = this.legacyStyles?.backgroundColor || this.theme.colors.card;
-    const textColor = this.legacyStyles?.textColor || this.theme.colors.cardForeground;
-    const borderRadius = this.legacyStyles?.borderRadius || this.theme.spacing.borderRadius.lg;
+    const content = document.createElement("div");
+    const bgColor =
+      this.legacyStyles?.backgroundColor || this.theme.colors.card;
+    const textColor =
+      this.legacyStyles?.textColor || this.theme.colors.cardForeground;
+    const borderRadius =
+      this.legacyStyles?.borderRadius || this.theme.spacing.borderRadius.lg;
 
     content.style.cssText = `
       background-color: ${bgColor};
@@ -97,7 +104,7 @@ export class WarningModal {
         ⏱️ Time Running Low
       </h2>
       <p style="margin: 0 0 ${this.theme.spacing.padding.lg} 0; font-size: ${this.theme.typography.fontSize.base}; line-height: ${this.theme.typography.lineHeight.normal}; color: ${this.theme.colors.mutedForeground};">
-        Your session will expire in <strong id="gw-time-display" style="color: ${textColor};">${minutes}:${seconds.toString().padStart(2, '0')}</strong>.
+        Your session will expire in <strong id="gw-time-display" style="color: ${textColor};">${minutes}:${seconds.toString().padStart(2, "0")}</strong>.
       </p>
       <div style="display: flex; gap: ${this.theme.spacing.gap.md}; justify-content: flex-end;">
         <button id="gw-dismiss-btn" style="
@@ -130,7 +137,7 @@ export class WarningModal {
               ">
                 Extend Session
               </button>`
-            : ''
+            : ""
         }
         ${
           options.onEnd
@@ -148,7 +155,7 @@ export class WarningModal {
               ">
                 End Session
               </button>`
-            : ''
+            : ""
         }
       </div>
     `;
@@ -157,24 +164,29 @@ export class WarningModal {
     document.body.appendChild(this.modal);
 
     // Add event listeners
-    const extendBtn = document.getElementById('gw-extend-btn');
+    const extendBtn = document.getElementById("gw-extend-btn");
     if (extendBtn && options.onExtend) {
-      extendBtn.addEventListener('click', () => {
+      extendBtn.addEventListener("click", () => {
+        // GW-6674: Do NOT hide the modal here. Extension is async — the caller
+        // hides the modal on success or calls showError() on failure. Hiding
+        // immediately previously left the SDK with no modal on a failed extend,
+        // so it fell back to redirecting the app tab to the marketplace (killing
+        // the user's work). Keep the modal open and show a pending state instead.
+        this.setExtendPending();
         options.onExtend?.();
-        this.hide();
       });
     }
 
-    const dismissBtn = document.getElementById('gw-dismiss-btn');
+    const dismissBtn = document.getElementById("gw-dismiss-btn");
     if (dismissBtn) {
-      dismissBtn.addEventListener('click', () => {
+      dismissBtn.addEventListener("click", () => {
         this.hide();
       });
     }
 
-    const endBtn = document.getElementById('gw-end-btn');
+    const endBtn = document.getElementById("gw-end-btn");
     if (endBtn && options.onEnd) {
-      endBtn.addEventListener('click', () => {
+      endBtn.addEventListener("click", () => {
         options.onEnd?.();
         // Don't call this.hide() here - the onEnd callback will handle showing
         // the ending modal, and calling hide() would remove it immediately
@@ -182,26 +194,27 @@ export class WarningModal {
     }
 
     // Add hover effects
-    const buttons = content.querySelectorAll('button');
+    const buttons = content.querySelectorAll("button");
     buttons.forEach((button) => {
-      button.addEventListener('mouseenter', () => {
-        (button as HTMLElement).style.opacity = '0.9';
+      button.addEventListener("mouseenter", () => {
+        (button as HTMLElement).style.opacity = "0.9";
       });
-      button.addEventListener('mouseleave', () => {
-        (button as HTMLElement).style.opacity = '1';
+      button.addEventListener("mouseleave", () => {
+        (button as HTMLElement).style.opacity = "1";
       });
       // Add focus ring
-      button.addEventListener('focus', () => {
-        (button as HTMLElement).style.outline = `2px solid ${this.theme.colors.ring}`;
-        (button as HTMLElement).style.outlineOffset = '2px';
+      button.addEventListener("focus", () => {
+        (button as HTMLElement).style.outline =
+          `2px solid ${this.theme.colors.ring}`;
+        (button as HTMLElement).style.outlineOffset = "2px";
       });
-      button.addEventListener('blur', () => {
-        (button as HTMLElement).style.outline = 'none';
+      button.addEventListener("blur", () => {
+        (button as HTMLElement).style.outline = "none";
       });
     });
 
     // Start updating the timer display
-    this.timeDisplay = document.getElementById('gw-time-display');
+    this.timeDisplay = document.getElementById("gw-time-display");
     this.updateInterval = window.setInterval(() => {
       const elapsed = Math.floor((Date.now() - this.startTime) / 1000);
       const remaining = Math.max(0, this.initialSeconds - elapsed);
@@ -210,7 +223,7 @@ export class WarningModal {
       const seconds = remaining % 60;
 
       if (this.timeDisplay) {
-        this.timeDisplay.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+        this.timeDisplay.textContent = `${minutes}:${seconds.toString().padStart(2, "0")}`;
       }
 
       // If time runs out, trigger session end if callback exists
@@ -249,6 +262,65 @@ export class WarningModal {
   }
 
   /**
+   * GW-6674: Put the Extend button into a pending state while the async
+   * extension request is in flight. Disables the button so the user can't
+   * double-click and clears any prior inline error. No-op if the modal is gone.
+   */
+  setExtendPending(): void {
+    if (!this.modal) return;
+    const extendBtn =
+      this.modal.querySelector<HTMLButtonElement>("#gw-extend-btn");
+    if (extendBtn) {
+      extendBtn.disabled = true;
+      extendBtn.style.opacity = "0.6";
+      extendBtn.style.cursor = "not-allowed";
+      extendBtn.textContent = "Extending…";
+    }
+    const existingError = this.modal.querySelector("#gw-extend-error");
+    if (existingError && existingError.parentNode) {
+      existingError.parentNode.removeChild(existingError);
+    }
+  }
+
+  /**
+   * GW-6674: Show an inline error inside the open warning modal when an
+   * extension attempt fails, and re-enable the Extend button so the user can
+   * retry. This replaces the previous behavior of redirecting the whole app
+   * tab to the marketplace (which destroyed the user's in-progress work on any
+   * extend failure). No-op if the modal is no longer shown.
+   */
+  showError(message: string): void {
+    if (!this.modal) return;
+    const content = this.modal.firstElementChild as HTMLElement | null;
+    if (!content) return;
+
+    // Re-enable the Extend button for a retry.
+    const extendBtn =
+      this.modal.querySelector<HTMLButtonElement>("#gw-extend-btn");
+    if (extendBtn) {
+      extendBtn.disabled = false;
+      extendBtn.style.opacity = "1";
+      extendBtn.style.cursor = "pointer";
+      extendBtn.textContent = "Extend Session";
+    }
+
+    // Reuse an existing error node or create one.
+    let errorEl = this.modal.querySelector<HTMLElement>("#gw-extend-error");
+    if (!errorEl) {
+      errorEl = document.createElement("p");
+      errorEl.id = "gw-extend-error";
+      errorEl.setAttribute("role", "alert");
+      errorEl.style.cssText = `
+        margin: ${this.theme.spacing.padding.md} 0 0 0;
+        font-size: ${this.theme.typography.fontSize.sm};
+        color: ${this.theme.colors.destructive};
+      `;
+      content.appendChild(errorEl);
+    }
+    errorEl.textContent = message;
+  }
+
+  /**
    * Show "Session Ending" modal before redirect
    * Displays for a fixed duration (3 seconds) then calls callback
    */
@@ -256,13 +328,16 @@ export class WarningModal {
     // Hide any existing modal first
     this.hide();
 
-    const bgColor = this.legacyStyles?.backgroundColor || this.theme.colors.card;
-    const textColor = this.legacyStyles?.textColor || this.theme.colors.cardForeground;
-    const borderRadius = this.legacyStyles?.borderRadius || this.theme.spacing.borderRadius.lg;
+    const bgColor =
+      this.legacyStyles?.backgroundColor || this.theme.colors.card;
+    const textColor =
+      this.legacyStyles?.textColor || this.theme.colors.cardForeground;
+    const borderRadius =
+      this.legacyStyles?.borderRadius || this.theme.spacing.borderRadius.lg;
 
     // Create modal overlay
-    this.modal = document.createElement('div');
-    this.modal.id = 'gw-session-ending-modal';
+    this.modal = document.createElement("div");
+    this.modal.id = "gw-session-ending-modal";
     this.modal.style.cssText = `
       position: fixed;
       top: 0;
@@ -279,7 +354,7 @@ export class WarningModal {
     `;
 
     // Create modal content
-    const content = document.createElement('div');
+    const content = document.createElement("div");
     content.style.cssText = `
       background-color: ${bgColor};
       color: ${textColor};
@@ -295,7 +370,7 @@ export class WarningModal {
 
     content.innerHTML = `
       <div style="font-size: 48px; margin-bottom: ${this.theme.spacing.padding.lg};">⏱️</div>
-      <h2 style="margin: 0 0 ${this.theme.spacing.padding.md} 0; font-size: ${this.theme.typography.fontSize['2xl']}; font-weight: ${this.theme.typography.fontWeight.semibold}; color: ${this.theme.colors.destructive};">
+      <h2 style="margin: 0 0 ${this.theme.spacing.padding.md} 0; font-size: ${this.theme.typography.fontSize["2xl"]}; font-weight: ${this.theme.typography.fontWeight.semibold}; color: ${this.theme.colors.destructive};">
         Session Ending
       </h2>
       <p style="margin: 0 0 ${this.theme.spacing.padding.lg} 0; font-size: ${this.theme.typography.fontSize.base}; line-height: ${this.theme.typography.lineHeight.normal}; color: ${this.theme.colors.mutedForeground};">
@@ -320,7 +395,7 @@ export class WarningModal {
     `;
 
     // Add animations
-    const style = document.createElement('style');
+    const style = document.createElement("style");
     style.textContent = `
       @keyframes fadeIn {
         from { opacity: 0; }

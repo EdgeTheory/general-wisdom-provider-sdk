@@ -1,15 +1,26 @@
-import { JWTParser } from './JWTParser';
-import { JWKSValidator } from './JWKSValidator';
-import { TimerManager } from './TimerManager';
-import { HeartbeatManager } from './HeartbeatManager';
-import { TabSyncManager, TabSyncMessage } from './TabSyncManager';
-import { PurchaseStateManager } from './PurchaseStateManager';
-import { WarningModal } from '../ui/WarningModal';
-import { extractTokenFromURL } from '../utils/url';
-import { Logger } from '../utils/logger';
-import { SDKConfig, SDKEvents, SessionData, SDKError, PurchaseError, PurchaseResult, SessionStartContext, SessionEndContext, SessionExtendContext, SessionWarningContext } from '../types';
-import { PurchaseModal } from '../ui/PurchaseModal';
-import { SDK_API_BASE } from './constants';
+import { JWTParser } from "./JWTParser";
+import { JWKSValidator } from "./JWKSValidator";
+import { TimerManager } from "./TimerManager";
+import { HeartbeatManager } from "./HeartbeatManager";
+import { TabSyncManager, TabSyncMessage } from "./TabSyncManager";
+import { PurchaseStateManager } from "./PurchaseStateManager";
+import { WarningModal } from "../ui/WarningModal";
+import { extractTokenFromURL } from "../utils/url";
+import { Logger } from "../utils/logger";
+import {
+  SDKConfig,
+  SDKEvents,
+  SessionData,
+  SDKError,
+  PurchaseError,
+  PurchaseResult,
+  SessionStartContext,
+  SessionEndContext,
+  SessionExtendContext,
+  SessionWarningContext,
+} from "../types";
+import { PurchaseModal } from "../ui/PurchaseModal";
+import { SDK_API_BASE } from "./constants";
 
 /**
  * Marketplace SDK with Phase 2 Features
@@ -30,7 +41,7 @@ export class MarketplaceSDK {
   private events: Partial<SDKEvents> = {};
   private sessionData: SessionData | null = null;
   private jwtToken: string | null = null;
-  private endReason: 'expired' | 'manual' | 'error' = 'manual';
+  private endReason: "expired" | "manual" | "error" = "manual";
   private purchaseStateManager: PurchaseStateManager;
   private purchaseModal: PurchaseModal | null = null;
 
@@ -38,28 +49,29 @@ export class MarketplaceSDK {
     // Validate required environment-aware configuration
     if (!config.jwksUri) {
       throw new SDKError(
-        'jwksUri is required — pass an environment-aware JWKS URL (e.g., https://api.dev.generalwisdom.com/.well-known/jwks.json). See README for environment-specific URLs.',
-        'CONFIG_MISSING_JWKS_URI'
+        "jwksUri is required — pass an environment-aware JWKS URL (e.g., https://api.dev.generalwisdom.com/.well-known/jwks.json). See README for environment-specific URLs.",
+        "CONFIG_MISSING_JWKS_URI",
       );
     }
     if (!config.marketplaceUrl) {
       throw new SDKError(
-        'marketplaceUrl is required — pass an environment-aware marketplace URL (e.g., https://dev.generalwisdom.com/). See README for environment-specific URLs.',
-        'CONFIG_MISSING_MARKETPLACE_URL'
+        "marketplaceUrl is required — pass an environment-aware marketplace URL (e.g., https://dev.generalwisdom.com/). See README for environment-specific URLs.",
+        "CONFIG_MISSING_MARKETPLACE_URL",
       );
     }
 
     this.config = {
       jwksUri: config.jwksUri,
-      jwtParamName: config.jwtParamName || 'gwSession',
-      apiEndpoint: config.apiEndpoint || 'https://api.platform.generalwisdom.com',
-      jwtIssuer: config.jwtIssuer || 'generalwisdom.com',
+      jwtParamName: config.jwtParamName || "gwSession",
+      apiEndpoint:
+        config.apiEndpoint || "https://api.platform.generalwisdom.com",
+      jwtIssuer: config.jwtIssuer || "generalwisdom.com",
       debug: config.debug ?? false,
       autoStart: config.autoStart ?? true,
       warningThresholdSeconds: config.warningThresholdSeconds ?? 300,
       customStyles: config.customStyles ?? {},
-      themeMode: config.themeMode ?? 'light',
-      applicationId: config.applicationId ?? '',
+      themeMode: config.themeMode ?? "light",
+      applicationId: config.applicationId ?? "",
       marketplaceUrl: config.marketplaceUrl,
       // Phase 2 options
       enableHeartbeat: config.enableHeartbeat ?? false,
@@ -73,12 +85,12 @@ export class MarketplaceSDK {
     };
 
     this.validator = new JWKSValidator(this.config.jwksUri, this.config.debug);
-    this.logger = new Logger(this.config.debug, '[MarketplaceSDK]');
+    this.logger = new Logger(this.config.debug, "[MarketplaceSDK]");
     this.purchaseStateManager = new PurchaseStateManager({
-      apiEndpoint: this.config.apiEndpoint
+      apiEndpoint: this.config.apiEndpoint,
     });
 
-    this.logger.info('SDK initialized with config:', {
+    this.logger.info("SDK initialized with config:", {
       jwksUri: this.config.jwksUri,
       jwtParamName: this.config.jwtParamName,
       apiEndpoint: this.config.apiEndpoint,
@@ -93,7 +105,7 @@ export class MarketplaceSDK {
    */
   on<K extends keyof SDKEvents>(event: K, handler: SDKEvents[K]): void {
     this.events[event] = handler;
-    this.logger.log('Event handler registered:', event);
+    this.logger.log("Event handler registered:", event);
   }
 
   /**
@@ -103,7 +115,7 @@ export class MarketplaceSDK {
     hookName: string,
     hook: ((context: T) => Promise<void> | void) | undefined,
     context: T,
-    isStrict: boolean = true
+    isStrict: boolean = true,
   ): Promise<void> {
     if (!hook) return;
 
@@ -111,16 +123,19 @@ export class MarketplaceSDK {
 
     const timeout = new Promise<never>((_, reject) =>
       setTimeout(
-        () => reject(new SDKError(`${hookName} hook timeout after ${this.config.hookTimeoutMs}ms`, 'HOOK_TIMEOUT')),
-        this.config.hookTimeoutMs
-      )
+        () =>
+          reject(
+            new SDKError(
+              `${hookName} hook timeout after ${this.config.hookTimeoutMs}ms`,
+              "HOOK_TIMEOUT",
+            ),
+          ),
+        this.config.hookTimeoutMs,
+      ),
     );
 
     try {
-      await Promise.race([
-        Promise.resolve(hook(context)),
-        timeout
-      ]);
+      await Promise.race([Promise.resolve(hook(context)), timeout]);
       this.logger.log(`${hookName} hook completed successfully`);
     } catch (error) {
       this.logger.error(`${hookName} hook failed:`, error);
@@ -128,12 +143,14 @@ export class MarketplaceSDK {
       if (isStrict) {
         // Strict mode: throw error to prevent session operation
         throw new SDKError(
-          `${hookName} hook failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
-          'HOOK_ERROR'
+          `${hookName} hook failed: ${error instanceof Error ? error.message : "Unknown error"}`,
+          "HOOK_ERROR",
         );
       } else {
         // Lenient mode: log but don't throw
-        this.logger.warn(`${hookName} hook failed but continuing (lenient mode)`);
+        this.logger.warn(
+          `${hookName} hook failed but continuing (lenient mode)`,
+        );
       }
     }
   }
@@ -152,20 +169,20 @@ export class MarketplaceSDK {
    * Initialize SDK and validate session
    */
   async initialize(): Promise<SessionData> {
-    this.logger.info('Initializing session...');
+    this.logger.info("Initializing session...");
 
     try {
       // Extract JWT from URL or retrieve from storage
-      const JWT_STORAGE_KEY = 'gw_marketplace_jwt';
+      const JWT_STORAGE_KEY = "gw_marketplace_jwt";
 
       // First try URL parameter
       this.jwtToken = extractTokenFromURL(this.config.jwtParamName);
 
       // If not in URL, try storage (for persistence through OAuth redirects)
-      if (!this.jwtToken && typeof sessionStorage !== 'undefined') {
+      if (!this.jwtToken && typeof sessionStorage !== "undefined") {
         this.jwtToken = sessionStorage.getItem(JWT_STORAGE_KEY);
         if (this.jwtToken) {
-          this.logger.log('JWT token retrieved from storage');
+          this.logger.log("JWT token retrieved from storage");
         }
       }
 
@@ -173,35 +190,35 @@ export class MarketplaceSDK {
       if (!this.jwtToken) {
         throw new SDKError(
           `No token found in URL parameter '${this.config.jwtParamName}' or storage`,
-          'MISSING_TOKEN'
+          "MISSING_TOKEN",
         );
       }
 
       // Store JWT for persistence through navigation
-      if (typeof sessionStorage !== 'undefined') {
+      if (typeof sessionStorage !== "undefined") {
         sessionStorage.setItem(JWT_STORAGE_KEY, this.jwtToken);
-        this.logger.log('JWT token stored in sessionStorage');
+        this.logger.log("JWT token stored in sessionStorage");
       }
 
-      this.logger.log('JWT token extracted from URL');
+      this.logger.log("JWT token extracted from URL");
 
       // Validate JWT
       let verifiedClaims;
       if (this.config.useBackendValidation) {
         // Phase 2: Backend validation
-        this.logger.log('Using backend validation');
+        this.logger.log("Using backend validation");
         verifiedClaims = await this.validateWithBackend(this.jwtToken);
       } else {
         // Phase 1: JWKS validation
-        this.logger.log('Using JWKS validation');
+        this.logger.log("Using JWKS validation");
         verifiedClaims = await this.validator.verify(
           this.jwtToken,
           this.config.jwtIssuer,
-          this.config.applicationId || undefined
+          this.config.applicationId || undefined,
         );
       }
 
-      this.logger.log('JWT verified successfully');
+      this.logger.log("JWT verified successfully");
 
       // Map to SessionData
       this.sessionData = {
@@ -222,13 +239,10 @@ export class MarketplaceSDK {
       const remainingSeconds = Math.max(0, this.sessionData.exp - now);
 
       if (remainingSeconds <= 0) {
-        throw new SDKError(
-          'Session has already expired',
-          'SESSION_EXPIRED'
-        );
+        throw new SDKError("Session has already expired", "SESSION_EXPIRED");
       }
 
-      this.logger.log('Remaining time:', remainingSeconds, 'seconds');
+      this.logger.log("Remaining time:", remainingSeconds, "seconds");
 
       // Call onSessionStart hook if provided (STRICT - failure prevents session start)
       if (this.config.hooks?.onSessionStart) {
@@ -243,8 +257,15 @@ export class MarketplaceSDK {
           jwt: this.jwtToken!,
         };
 
-        await this.executeHook('onSessionStart', this.config.hooks.onSessionStart, startContext, true);
-        this.logger.log('Application auth synchronized with marketplace session');
+        await this.executeHook(
+          "onSessionStart",
+          this.config.hooks.onSessionStart,
+          startContext,
+          true,
+        );
+        this.logger.log(
+          "Application auth synchronized with marketplace session",
+        );
       }
 
       // Initialize timer
@@ -260,19 +281,25 @@ export class MarketplaceSDK {
                 userId: this.sessionData!.userId,
                 remainingSeconds: data.remainingSeconds,
               };
-              this.executeHook('onSessionWarning', this.config.hooks.onSessionWarning, warningContext, false)
-                .catch(error => this.logger.error('onSessionWarning hook failed:', error));
+              this.executeHook(
+                "onSessionWarning",
+                this.config.hooks.onSessionWarning,
+                warningContext,
+                false,
+              ).catch((error) =>
+                this.logger.error("onSessionWarning hook failed:", error),
+              );
             }
 
             this.showWarningModal(data.remainingSeconds);
             this.events.onSessionWarning?.(data);
           },
           onSessionEnd: () => {
-            this.endReason = 'expired'; // Track that this was an expiration
+            this.endReason = "expired"; // Track that this was an expiration
             this.endSession();
           },
         },
-        this.config.debug
+        this.config.debug,
       );
 
       // Phase 2: Initialize heartbeat if enabled
@@ -286,11 +313,11 @@ export class MarketplaceSDK {
             this.timer?.updateRemainingTime(remainingSeconds);
           },
           (error) => {
-            this.logger.error('Heartbeat error:', error);
+            this.logger.error("Heartbeat error:", error);
             this.events.onError?.(error);
           },
           this.config.heartbeatIntervalSeconds,
-          this.config.debug
+          this.config.debug,
         );
       }
 
@@ -299,7 +326,7 @@ export class MarketplaceSDK {
         this.tabSync = new TabSyncManager(
           this.sessionData.sessionId,
           (message) => this.handleTabSyncMessage(message),
-          this.config.debug
+          this.config.debug,
         );
       }
 
@@ -311,16 +338,16 @@ export class MarketplaceSDK {
       // Start timer if autoStart enabled
       if (this.config.autoStart) {
         this.timer.start();
-        this.logger.log('Timer started automatically');
+        this.logger.log("Timer started automatically");
 
         // Start heartbeat only if this is the master tab
         if (this.config.enableHeartbeat && this.heartbeat) {
           const isMaster = !this.tabSync || this.tabSync.isMasterTab();
           if (isMaster) {
             this.heartbeat.start();
-            this.logger.log('Heartbeat started (master tab)');
+            this.logger.log("Heartbeat started (master tab)");
           } else {
-            this.logger.log('Heartbeat not started (slave tab)');
+            this.logger.log("Heartbeat not started (slave tab)");
           }
         }
       }
@@ -328,15 +355,17 @@ export class MarketplaceSDK {
       // Trigger session start event
       this.events.onSessionStart?.(this.sessionData);
 
-      this.logger.info('Session initialized successfully');
+      this.logger.info("Session initialized successfully");
       return this.sessionData;
-
     } catch (error) {
-      this.logger.error('Initialization failed:', error);
-      const sdkError = error instanceof SDKError ? error : new SDKError(
-        error instanceof Error ? error.message : 'Unknown error',
-        'INITIALIZATION_ERROR'
-      );
+      this.logger.error("Initialization failed:", error);
+      const sdkError =
+        error instanceof SDKError
+          ? error
+          : new SDKError(
+              error instanceof Error ? error.message : "Unknown error",
+              "INITIALIZATION_ERROR",
+            );
       this.events.onError?.(sdkError);
       throw sdkError;
     }
@@ -349,28 +378,28 @@ export class MarketplaceSDK {
     const response = await fetch(
       `${this.config.apiEndpoint}${SDK_API_BASE}/sessions/validate`,
       {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({ session_jwt: token }),
-      }
+      },
     );
 
     if (!response.ok) {
       throw new SDKError(
-        'Backend validation failed',
-        'BACKEND_VALIDATION_FAILED',
-        response.status
+        "Backend validation failed",
+        "BACKEND_VALIDATION_FAILED",
+        response.status,
       );
     }
 
     const data = await response.json();
     if (!data.valid) {
       throw new SDKError(
-        data.error || 'Session validation failed',
-        'SESSION_INVALID'
+        data.error || "Session validation failed",
+        "SESSION_INVALID",
       );
     }
 
@@ -383,19 +412,19 @@ export class MarketplaceSDK {
    * Phase 2: Handle tab sync messages
    */
   private handleTabSyncMessage(message: TabSyncMessage): void {
-    this.logger.log('Tab sync message:', message.type);
+    this.logger.log("Tab sync message:", message.type);
 
     switch (message.type) {
-      case 'pause':
+      case "pause":
         this.timer?.pause();
         break;
-      case 'resume':
+      case "resume":
         this.timer?.resume();
         break;
-      case 'end':
+      case "end":
         this.endSession();
         break;
-      case 'timer_update':
+      case "timer_update":
         if (message.remainingSeconds !== undefined) {
           this.timer?.updateRemainingTime(message.remainingSeconds);
         }
@@ -407,16 +436,16 @@ export class MarketplaceSDK {
    * Phase 2: Initialize Visibility API handling
    */
   private initializeVisibilityHandling(): void {
-    document.addEventListener('visibilitychange', () => {
+    document.addEventListener("visibilitychange", () => {
       if (document.hidden) {
-        this.logger.log('Tab hidden, pausing timer');
+        this.logger.log("Tab hidden, pausing timer");
         this.pauseTimer();
       } else {
-        this.logger.log('Tab visible, resuming timer');
+        this.logger.log("Tab visible, resuming timer");
         this.resumeTimer();
       }
     });
-    this.logger.log('Visibility API handler initialized');
+    this.logger.log("Visibility API handler initialized");
   }
 
   /**
@@ -425,13 +454,13 @@ export class MarketplaceSDK {
   startTimer(): void {
     if (!this.timer) {
       throw new SDKError(
-        'SDK not initialized. Call initialize() first.',
-        'NOT_INITIALIZED'
+        "SDK not initialized. Call initialize() first.",
+        "NOT_INITIALIZED",
       );
     }
     this.timer.start();
-    this.tabSync?.broadcast('resume');
-    this.logger.info('Timer started manually');
+    this.tabSync?.broadcast("resume");
+    this.logger.info("Timer started manually");
   }
 
   /**
@@ -439,8 +468,8 @@ export class MarketplaceSDK {
    */
   pauseTimer(): void {
     this.timer?.pause();
-    this.tabSync?.broadcast('pause');
-    this.logger.info('Timer paused');
+    this.tabSync?.broadcast("pause");
+    this.logger.info("Timer paused");
   }
 
   /**
@@ -448,8 +477,8 @@ export class MarketplaceSDK {
    */
   resumeTimer(): void {
     this.timer?.resume();
-    this.tabSync?.broadcast('resume');
-    this.logger.info('Timer resumed');
+    this.tabSync?.broadcast("resume");
+    this.logger.info("Timer resumed");
   }
 
   /**
@@ -457,32 +486,32 @@ export class MarketplaceSDK {
    */
   async extendSession(additionalMinutes: number): Promise<void> {
     if (!this.sessionData || !this.jwtToken) {
-      throw new SDKError('No active session', 'NO_SESSION');
+      throw new SDKError("No active session", "NO_SESSION");
     }
 
-    this.logger.info('Extending session by', additionalMinutes, 'minutes');
+    this.logger.info("Extending session by", additionalMinutes, "minutes");
 
     try {
       const response = await fetch(
         `${this.config.apiEndpoint}${SDK_API_BASE}/sessions/${this.sessionData.sessionId}/extend`,
         {
-          method: 'POST',
+          method: "POST",
           headers: {
-            'Authorization': `Bearer ${this.jwtToken}`,
-            'Content-Type': 'application/json',
+            Authorization: `Bearer ${this.jwtToken}`,
+            "Content-Type": "application/json",
           },
           body: JSON.stringify({
             extensionMinutes: additionalMinutes,
             idempotencyKey: crypto.randomUUID(),
           }),
-        }
+        },
       );
 
       if (!response.ok) {
         throw new SDKError(
-          'Session extension failed',
-          'EXTENSION_FAILED',
-          response.status
+          "Session extension failed",
+          "EXTENSION_FAILED",
+          response.status,
         );
       }
 
@@ -497,7 +526,7 @@ export class MarketplaceSDK {
       this.timer?.updateRemainingTime(remainingSeconds);
 
       // Broadcast to other tabs
-      this.tabSync?.broadcast('timer_update', { remainingSeconds });
+      this.tabSync?.broadcast("timer_update", { remainingSeconds });
 
       // Call onSessionExtend hook if provided
       if (this.config.hooks?.onSessionExtend) {
@@ -508,17 +537,24 @@ export class MarketplaceSDK {
           newExpiresAt: data.newExpiresAt,
         };
 
-        await this.executeHook('onSessionExtend', this.config.hooks.onSessionExtend, extendContext, false);
+        await this.executeHook(
+          "onSessionExtend",
+          this.config.hooks.onSessionExtend,
+          extendContext,
+          false,
+        );
       }
 
-      this.logger.info('Session extended successfully');
-
+      this.logger.info("Session extended successfully");
     } catch (error) {
-      this.logger.error('Failed to extend session:', error);
-      const sdkError = error instanceof SDKError ? error : new SDKError(
-        error instanceof Error ? error.message : 'Extension failed',
-        'EXTENSION_ERROR'
-      );
+      this.logger.error("Failed to extend session:", error);
+      const sdkError =
+        error instanceof SDKError
+          ? error
+          : new SDKError(
+              error instanceof Error ? error.message : "Extension failed",
+              "EXTENSION_ERROR",
+            );
       this.events.onError?.(sdkError);
       throw sdkError;
     }
@@ -528,12 +564,12 @@ export class MarketplaceSDK {
    * End session
    */
   async endSession(): Promise<void> {
-    this.logger.info('Ending session...');
+    this.logger.info("Ending session...");
 
     // Build session end context
     const endContext: SessionEndContext = {
-      sessionId: this.sessionData?.sessionId || '',
-      userId: this.sessionData?.userId || '',
+      sessionId: this.sessionData?.sessionId || "",
+      userId: this.sessionData?.userId || "",
       reason: this.endReason,
       actualDurationMinutes: this.calculateActualDuration(),
     };
@@ -541,11 +577,19 @@ export class MarketplaceSDK {
     // Call onSessionEnd hook if provided (LENIENT - errors logged but don't block)
     if (this.config.hooks?.onSessionEnd) {
       try {
-        await this.executeHook('onSessionEnd', this.config.hooks.onSessionEnd, endContext, false);
-        this.logger.log('Application auth cleanup completed');
+        await this.executeHook(
+          "onSessionEnd",
+          this.config.hooks.onSessionEnd,
+          endContext,
+          false,
+        );
+        this.logger.log("Application auth cleanup completed");
       } catch (error) {
         // This shouldn't throw due to lenient mode, but catch anyway
-        this.logger.error('onSessionEnd hook error (continuing anyway):', error);
+        this.logger.error(
+          "onSessionEnd hook error (continuing anyway):",
+          error,
+        );
       }
     }
 
@@ -556,18 +600,18 @@ export class MarketplaceSDK {
     this.heartbeat?.stop();
 
     // Broadcast to other tabs
-    this.tabSync?.broadcast('end');
+    this.tabSync?.broadcast("end");
 
     // Clear JWT from storage
-    if (typeof sessionStorage !== 'undefined') {
-      sessionStorage.removeItem('gw_marketplace_jwt');
-      this.logger.log('JWT token cleared from storage');
+    if (typeof sessionStorage !== "undefined") {
+      sessionStorage.removeItem("gw_marketplace_jwt");
+      this.logger.log("JWT token cleared from storage");
     }
 
     // Trigger end event
     this.events.onSessionEnd?.();
 
-    this.logger.info('Session ended');
+    this.logger.info("Session ended");
 
     // Show "Session Ending" modal, then close-or-redirect after 3 seconds.
     //
@@ -579,12 +623,12 @@ export class MarketplaceSDK {
     // delay. Net behavior:
     //   - Tab opened from marketplace SPA → tab closes.
     //   - Tab opened directly via URL paste → redirects to marketplaceUrl.
-    if (typeof window !== 'undefined') {
+    if (typeof window !== "undefined") {
       // Create modal if it doesn't exist
       if (!this.modal) {
         this.modal = new WarningModal(
-          this.config.themeMode || 'light',
-          this.config.customStyles
+          this.config.themeMode || "light",
+          this.config.customStyles,
         );
       }
 
@@ -611,8 +655,8 @@ export class MarketplaceSDK {
   private showWarningModal(remainingSeconds: number): void {
     if (!this.modal) {
       this.modal = new WarningModal(
-        this.config.themeMode || 'light',
-        this.config.customStyles
+        this.config.themeMode || "light",
+        this.config.customStyles,
       );
     }
 
@@ -623,23 +667,21 @@ export class MarketplaceSDK {
         try {
           await this.extendSession(15); // Extend by 15 minutes
           this.modal?.hide();
-          this.logger.log('Session extended successfully from modal');
+          this.logger.log("Session extended successfully from modal");
         } catch (error) {
-          // If extension fails (likely insufficient tokens), show ending modal then redirect to marketplace
-          this.logger.error('Extension failed, redirecting to marketplace:', error);
-          const marketplaceUrl = `${this.config.marketplaceUrl}extend-session?sessionId=${this.sessionData?.sessionId}`;
-
-          // Show ending modal before redirect
-          if (typeof window !== 'undefined') {
-            if (!this.modal) {
-              this.modal = new WarningModal(
-                this.config.themeMode || 'light',
-                this.config.customStyles
-              );
-            }
-            this.modal.showEndingMessage(() => {
-              window.location.href = marketplaceUrl;
-            }, 3000);
+          // GW-6674: Extension failed. Previously this redirected the whole app
+          // tab to the marketplace (window.location.href), destroying the user's
+          // in-progress work on ANY extend failure — including transient errors
+          // for sessions that were still perfectly usable. Instead, keep the app
+          // tab intact and surface an inline, retryable error inside the warning
+          // modal. The session keeps running until it actually expires (onEnd).
+          this.logger.error("Extension failed:", error);
+          const message =
+            error instanceof SDKError && error.statusCode === 402
+              ? "Not enough tokens to extend. Purchase more from the marketplace, then try again."
+              : "Could not extend the session. Please try again.";
+          if (this.modal?.isShown()) {
+            this.modal.showError(message);
           }
         }
       },
@@ -668,14 +710,14 @@ export class MarketplaceSDK {
    * Get formatted time (MM:SS)
    */
   getFormattedTime(): string {
-    return this.timer?.getFormattedTime() ?? '0:00';
+    return this.timer?.getFormattedTime() ?? "0:00";
   }
 
   /**
    * Get formatted time with hours (HH:MM:SS)
    */
   getFormattedTimeWithHours(): string {
-    return this.timer?.getFormattedTimeWithHours() ?? '0:00:00';
+    return this.timer?.getFormattedTimeWithHours() ?? "0:00:00";
   }
 
   /**
@@ -691,10 +733,10 @@ export class MarketplaceSDK {
    */
   requestPurchase(itemId: string): void {
     if (!this.sessionData || !this.jwtToken) {
-      throw new SDKError('No active session', 'NO_SESSION');
+      throw new SDKError("No active session", "NO_SESSION");
     }
 
-    this.logger.info('Requesting purchase for item:', itemId);
+    this.logger.info("Requesting purchase for item:", itemId);
 
     // Fire onPurchaseStart
     this.events.onPurchaseStart?.({ itemId, quantity: 1 });
@@ -702,8 +744,8 @@ export class MarketplaceSDK {
     // Create modal if needed (lazy init, same pattern as WarningModal)
     if (!this.purchaseModal) {
       this.purchaseModal = new PurchaseModal(
-        this.config.themeMode || 'light',
-        this.config.customStyles
+        this.config.themeMode || "light",
+        this.config.customStyles,
       );
     }
 
@@ -714,21 +756,21 @@ export class MarketplaceSDK {
           const response = await fetch(
             `${this.config.apiEndpoint}${SDK_API_BASE}/items/${itemId}/purchase`,
             {
-              method: 'POST',
+              method: "POST",
               headers: {
-                'Authorization': `Bearer ${this.jwtToken}`,
-                'Content-Type': 'application/json',
+                Authorization: `Bearer ${this.jwtToken}`,
+                "Content-Type": "application/json",
               },
               body: JSON.stringify({ item_id: itemId, quantity: 1 }),
-            }
+            },
           );
 
           if (!response.ok) {
             throw new PurchaseError(
-              'Purchase failed',
-              'PURCHASE_FAILED',
+              "Purchase failed",
+              "PURCHASE_FAILED",
               itemId,
-              response.status
+              response.status,
             );
           }
 
@@ -745,22 +787,23 @@ export class MarketplaceSDK {
             this.events.onBalanceUpdate?.(data.newBalance);
           }
 
-          this.logger.info('Purchase successful:', result);
+          this.logger.info("Purchase successful:", result);
         } catch (error) {
-          const purchaseError = error instanceof PurchaseError
-            ? error
-            : new PurchaseError(
-                error instanceof Error ? error.message : 'Purchase failed',
-                'PURCHASE_ERROR',
-                itemId
-              );
+          const purchaseError =
+            error instanceof PurchaseError
+              ? error
+              : new PurchaseError(
+                  error instanceof Error ? error.message : "Purchase failed",
+                  "PURCHASE_ERROR",
+                  itemId,
+                );
           this.events.onPurchaseError?.(purchaseError);
-          this.logger.error('Purchase failed:', purchaseError);
+          this.logger.error("Purchase failed:", purchaseError);
         }
       },
       onCancel: () => {
         this.events.onPurchaseCancelled?.(itemId);
-        this.logger.info('Purchase cancelled for item:', itemId);
+        this.logger.info("Purchase cancelled for item:", itemId);
       },
     });
   }
@@ -776,7 +819,7 @@ export class MarketplaceSDK {
    * Cleanup and destroy SDK instance
    */
   destroy(): void {
-    this.logger.info('Destroying SDK instance...');
+    this.logger.info("Destroying SDK instance...");
     this.timer?.stop();
     this.heartbeat?.stop();
     this.tabSync?.destroy();
@@ -784,9 +827,9 @@ export class MarketplaceSDK {
     this.purchaseModal?.hide();
 
     // Clear JWT from storage
-    if (typeof sessionStorage !== 'undefined') {
-      sessionStorage.removeItem('gw_marketplace_jwt');
-      this.logger.log('JWT token cleared from storage');
+    if (typeof sessionStorage !== "undefined") {
+      sessionStorage.removeItem("gw_marketplace_jwt");
+      this.logger.log("JWT token cleared from storage");
     }
 
     this.sessionData = null;
