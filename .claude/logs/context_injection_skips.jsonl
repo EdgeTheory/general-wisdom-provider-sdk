@@ -1,3 +1,0 @@
-{"timestamp": "2025-07-21T15:04:58.440769", "type": "context_injection_skip", "reason": "general_domain", "details": "intent: testing_qa, domain: general, confidence: 0.312", "user_prompt_preview": "test prompt"}
-{"timestamp": "2025-07-21T15:05:57.137283", "type": "context_injection_skip", "reason": "general_domain", "details": "intent: testing_qa, domain: general, confidence: 0.312", "user_prompt_preview": "test prompt"}
-{"timestamp": "2025-07-21T15:10:53.145848", "type": "context_injection_skip", "reason": "general_domain", "details": "intent: testing_qa, domain: general, confidence: 0.312", "user_prompt_preview": "test prompt"}
