@@ -59,3 +59,4 @@ implementation-plan.md
 # Pact generated artifacts
 pact/pacts/
 pact/logs/
+.claude/
